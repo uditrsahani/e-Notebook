@@ -1,138 +1,113 @@
-import express from 'express'
+import express from "express";
+import fetchUser from "../middleware/fetchUser.js";
+import Notes from "../models/Notes.js";
 const router = express.Router();
 
-router.get('/', (req, res)=>{
-  let obj = {
-    
-      1: {
-          "patient_id": "P001",
-          "name": "John Doe",
-          "age": 45,
-          "gender": "Male",
-          "address": {
-              "street": "123 Maple Street",
-              "city": "Springfield",
-              "state": "IL",
-              "zip": "62701"
-          },
-          "contact": {
-              "phone": "555-123-4567",
-              "email": "johndoe@example.com"
-          },
-          "medical_history": [
-              {
-                  "condition": "Hypertension",
-                  "diagnosed_date": "2018-06-20",
-                  "medications": ["Lisinopril"]
-              },
-              {
-                  "condition": "Type 2 Diabetes",
-                  "diagnosed_date": "2015-04-12",
-                  "medications": ["Metformin"]
-              }
-          ]
-      },
-      2: {
-          "patient_id": "P002",
-          "name": "Jane Smith",
-          "age": 30,
-          "gender": "Female",
-          "address": {
-              "street": "456 Oak Avenue",
-              "city": "Lincoln",
-              "state": "NE",
-              "zip": "68508"
-          },
-          "contact": {
-              "phone": "555-234-5678",
-              "email": "janesmith@example.com"
-          },
-          "medical_history": [
-              {
-                  "condition": "Asthma",
-                  "diagnosed_date": "2000-11-03",
-                  "medications": ["Albuterol"]
-              }
-          ]
-      },
-     3: {
-          "patient_id": "P003",
-          "name": "Robert Brown",
-          "age": 65,
-          "gender": "Male",
-          "address": {
-              "street": "789 Pine Road",
-              "city": "Madison",
-              "state": "WI",
-              "zip": "53703"
-          },
-          "contact": {
-              "phone": "555-345-6789",
-              "email": "robertbrown@example.com"
-          },
-          "medical_history": [
-              {
-                  "condition": "Chronic Obstructive Pulmonary Disease (COPD)",
-                  "diagnosed_date": "2010-05-14",
-                  "medications": ["Tiotropium"]
-              }
-          ]
-      },
-   4:   {
-          "patient_id": "P004",
-          "name": "Emily Davis",
-          "age": 50,
-          "gender": "Female",
-          "address": {
-              "street": "321 Birch Boulevard",
-              "city": "Denver",
-              "state": "CO",
-              "zip": "80203"
-          },
-          "contact": {
-              "phone": "555-456-7890",
-              "email": "emilydavis@example.com"
-          },
-          "medical_history": [
-              {
-                  "condition": "Breast Cancer",
-                  "diagnosed_date": "2019-09-23",
-                  "medications": ["Tamoxifen"]
-              }
-          ]
-      },
-   5:   {
-          "patient_id": "P005",
-          "name": "Michael Johnson",
-          "age": 55,
-          "gender": "Male",
-          "address": {
-              "street": "654 Elm Street",
-              "city": "Columbus",
-              "state": "OH",
-              "zip": "43215"
-          },
-          "contact": {
-              "phone": "555-567-8901",
-              "email": "michaeljohnson@example.com"
-          },
-          "medical_history": [
-              {
-                  "condition": "Arthritis",
-                  "diagnosed_date": "2012-07-19",
-                  "medications": ["Ibuprofen"]
-              },
-              {
-                  "condition": "High Cholesterol",
-                  "diagnosed_date": "2016-02-25",
-                  "medications": ["Atorvastatin"]
-              }
-          ]
-      }
-  
-  
+//ROUTE 1: Get all the notes using: GET "/api/notes/fetchallnotes" . Login Required
+router.get("/fetchallnotes", fetchUser, async (req, res) => {
+  try {
+    const notes = await Notes.find({ user: req.userId });
+    res.json(notes);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Internal Server Error!");
   }
-  res.send(obj)
-})
+});
+
+//Second route
+router.post("/addnote", fetchUser, async (req, res) => {
+  try {
+    //data coming from body
+    const { title, description, tag } = req.body;
+
+    //validation
+    if (!title || !description || !tag) {
+      return res.status(400).json({ error: "All fields are required!" });
+    }
+
+    //Notes
+    const notes = new Notes({ title, description, tag, user: req.userId });
+
+    //Saving Notes
+    const savedNote = await notes.save();
+    res.json(savedNote);
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+//ROUTE 3: Update an existing Note using: PUT "api/notes/updatenote." Login required
+
+router.put("/updatenote/:id", fetchUser, async (req, res) => {
+  //data coming from body(frontend)
+  const { title, description, tag } = req.body;
+  const { id } = req.params;
+
+  try {
+    //find note to be updated
+    let note = await Notes.findById({ _id: id });
+
+    if (!note) {
+      return res.status(404).send("Not Found");
+    }
+
+    if (String(note.user) !== req.userId) {
+      return res.status(401).send("Not Allowed");
+    }
+
+    console.log(note);
+    const notes = await Notes.findByIdAndUpdate(
+      { _id: id },
+      { $set: { title, description, tag } },
+      { new: true }
+    );
+
+    res.json({ notes, success: "Notes updated successfully" });
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).send("Internal Server Error!");
+  }
+});
+
+//Route 4: Delete  an existing note using: DELETE
+router.delete("/deletenote/:id", fetchUser, async (req, res) => {
+  try {
+    //Find the note to delete it
+    let note = await Notes.findById(req.params.id);
+    if (!note) {
+      return res.status(404).send("Note Found");
+    }
+
+    //* Allow deletion only if user owns this note
+    if (note.user.toString() !== req.userId) {
+      return res.status(401).send("Not Allowed");
+    }
+
+    note = await Notes.findByIdAndDelete(req.params.id);
+    res.json({ Success: "Note has been deleted", note: note });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).send("Internal Server Error!");
+  }
+});
+
+//Route 5: Get notes by id: "/api/notes/notes/:id. Login Required"
+router.get("/notes/:id", fetchUser, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const notes = await Notes.findById({ _id: id });
+    console.log(notes);
+
+    if (notes) {
+      return res.status(200).json(notes);
+    } else {
+      return res.status(404).json({ success: "notes not found" });
+    }
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
 
 export default router;
