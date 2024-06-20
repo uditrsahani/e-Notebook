@@ -1,19 +1,28 @@
-/* eslint-disable no-unused-vars */
-import React from 'react'
-import './App.css'
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+} from "react-router-dom";
+import Home from "./pages/home/Home";
+import Signup from "./pages/signup/Signup";
+import Login from "./pages/login/Login";
+import AddNote from "./pages/addnote/AddNote";
+import Updatenote from "./pages/updatenote/Updatenote";
+import Profile from "./pages/profile/Profile";
+import NoPage from "./pages/nopage/NoPage";
 
-function App() {
-  return (
-    <div className=' bg-black flex justify-center items-center h-screen'>
-      <h2 className=' text-6xl font-bold text-pink-300'>
-        <span className='text-[green]'>M</span>
-        <span className='text-white'>E</span>
-        <span className='text-blue-400'>R</span>
-        <span className='text-green-200'>N </span>
-        Stack Course
-      </h2>
-    </div>
+function App(){
+  return(
+    <Router>
+      <Routes>
+        <Route path='/' element={<Home/>}/>
+        <Route path='/signup' element={<Signup/>}/>
+        <Route path='/login' element={<Login/>}/>
+        <Route path='/addnote' element={<AddNote/>}/>
+        <Route path='/updatenote' element={<Updatenote/>}/>
+        <Route path='/profile' element={<Profile/>}/>
+        <Route path='/*' element={<NoPage/>}/>
+      </Routes>
+    </Router>
   )
 }
-
-export default App
