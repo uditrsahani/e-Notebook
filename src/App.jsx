@@ -10,7 +10,9 @@ import AddNote from "./pages/addnote/AddNote";
 import Updatenote from "./pages/updatenote/Updatenote";
 import Profile from "./pages/profile/Profile";
 import NoPage from "./pages/nopage/NoPage";
+import { Toaster } from 'react-hot-toast';
 
+// eslint-disable-next-line react-refresh/only-export-components
 function App(){
   return(
     <Router>
@@ -23,6 +25,9 @@ function App(){
         <Route path='/profile' element={<Profile/>}/>
         <Route path='/*' element={<NoPage/>}/>
       </Routes>
+      <Toaster /> 
     </Router>
   )
 }
+
+export default App;
